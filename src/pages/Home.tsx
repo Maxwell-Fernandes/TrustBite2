@@ -1,11 +1,42 @@
-import { useUser, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { useState, useEffect } from "react";
+import {
+  useUser,
+  SignedIn,
+  SignedOut,
+  RedirectToSignIn,
+  useOrganizationList
+} from "@clerk/clerk-react";
 import { Link } from "react-router-dom";
-// Import the new icon
-import { ArrowRight, AlertTriangle, ListChecks, ShieldCheck, BadgeCheck } from "lucide-react";
+import {
+  ArrowRight,
+  AlertTriangle,
+  ListChecks,
+  ShieldCheck,
+  BadgeCheck,
+  Loader2
+} from "lucide-react";
 
 function Home() {
-  const { user } = useUser();
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === "admin@foodsafewatch.com";
+  const { user, isLoaded: userLoaded } = useUser();
+  const { isLoaded: orgsLoaded, organizationList } = useOrganizationList();
+
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (
+      userLoaded &&
+      orgsLoaded &&
+      user &&
+      Array.isArray(organizationList)
+    ) {
+      const adminMembership = organizationList.find(
+        (orgMembership) => orgMembership?.membership?.role === "Admin"
+      );
+      setIsAdmin(!!adminMembership);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [userLoaded, orgsLoaded, user, organizationList]);
 
   return (
     <>
@@ -14,17 +45,13 @@ function Home() {
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
               <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-blue-600">
-                {/* Updated App Name */}
                 Welcome to FoodSafeWatch, {user?.firstName || "User"}!
               </h1>
               <p className="text-xl text-gray-700 max-w-2xl mx-auto">
-                {/* Updated Tagline */}
                 Your portal for food safety reporting and FSSAI license verification.
               </p>
             </div>
 
-            {/* Adjusted grid columns for potential 4 items on large screens if needed */}
-            {/* Or keep lg:grid-cols-3 and let the 4th item wrap, which is often fine */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
               {/* Submit Report Card */}
               <div className="group hover:scale-105 transition-all duration-300">
@@ -54,27 +81,21 @@ function Home() {
                 </Link>
               </div>
 
-              {/* --- Check FSSAI License Card (Correctly Implemented) --- */}
+              {/* Check FSSAI License Card */}
               <div className="group hover:scale-105 transition-all duration-300">
-                {/* Link to the new page/route for checking FSSAI */}
                 <Link to="/check-fssai" className="block h-full bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group-hover:border-orange-500 border-2 border-transparent">
-                  {/* Icon and background */}
                   <div className="bg-orange-100 p-3 rounded-full w-14 h-14 flex items-center justify-center mb-4">
                     <BadgeCheck className="text-orange-600" size={24} />
                   </div>
-                  {/* Title */}
                   <h2 className="text-xl font-bold mb-3 text-gray-800 group-hover:text-orange-600 transition-colors">Check FSSAI License</h2>
-                  {/* Description */}
                   <p className="text-gray-600 mb-4">Verify the details and validity of an FSSAI license number.</p>
-                  {/* Call to action */}
                   <div className="flex items-center text-orange-600 font-medium">
                     Verify now <ArrowRight className="ml-2 w-4 h-4" />
                   </div>
                 </Link>
               </div>
-              {/* --- END: Check FSSAI License Card --- */}
 
-              {/* Admin Dashboard Card (Conditional) */}
+              {/* Admin Dashboard - only if admin */}
               {isAdmin && (
                 <div className="group hover:scale-105 transition-all duration-300">
                   <Link to="/admin" className="block h-full bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all group-hover:border-purple-500 border-2 border-transparent">
@@ -91,33 +112,19 @@ function Home() {
               )}
             </div>
 
-            {/* How it Works Section (Can be updated if needed) */}
+            {/* How it Works Section (can customize later) */}
             <div className="bg-white p-6 rounded-xl shadow-md">
               <h3 className="text-lg font-semibold mb-3 text-gray-800">How FoodSafeWatch Works</h3>
-              <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-6">
-                <div className="flex-1 flex flex-col items-center text-center p-4">
-                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center mb-2">
-                    <span className="font-bold text-emerald-600">1</span>
-                  </div>
-                  <p className="text-gray-700">Submit reports or check FSSAI licenses</p> {/* Updated step 1 */}
-                </div>
-                <div className="flex-1 flex flex-col items-center text-center p-4">
-                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-2">
-                    <span className="font-bold text-blue-600">2</span>
-                  </div>
-                  <p className="text-gray-700">We review submissions & verify data</p>
-                </div>
-                <div className="flex-1 flex flex-col items-center text-center p-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mb-2">
-                    <span className="font-bold text-purple-600">3</span>
-                  </div>
-                  <p className="text-gray-700">Track updates and contribute to safety</p>
-                </div>
+              <div className="text-gray-600 space-y-2">
+                <p>1. Submit food safety concerns using the platform.</p>
+                <p>2. Track the progress of your complaints.</p>
+                <p>3. Verify FSSAI licenses before purchasing food products.</p>
               </div>
             </div>
           </div>
         </div>
       </SignedIn>
+
       <SignedOut>
         <RedirectToSignIn />
       </SignedOut>
